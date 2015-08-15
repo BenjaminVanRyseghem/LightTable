@@ -1,8 +1,20 @@
 (ns lt.macros
+  "Set of macros used in LightTable.
+  Note that the macros are written in Clojure are the macro-expansion
+  is done at compilation time (the unescaped sexp are in ClojureScript though)"
   (:require [clojure.walk :as walk]))
 
-(defn- namify [type keyword]
+(defn- namify
+  "Namify a KEYWORD by escaping the dots and prepending the TYPE"
+  [type keyword]
   (symbol (str "__" type "__" (.replace (name keyword) "." "__DOT__"))))
+
+(defn- ->params
+  "Ensure a [params body] form from BODY"
+  [body]
+  (if (vector? (first body))
+    [(first body) (rest body)]
+    [[] body]))
 
 (defmacro behavior [name & {:keys [reaction] :as r}]
   (if (and (seq? reaction) (= 'fn (first reaction)))
@@ -25,12 +37,9 @@
      (lighttable.components.logger/log ~ev (- (lighttable.util.js/now) start#))
      res#))
 
-(defn ->params [body]
-  (if (vector? (first body))
-    [(first body) (rest body)]
-    [[] body]))
-
-(defmacro on [name & body]
+(defmacro on
+  "Wrapper for the `lighttable.command/on` function"
+  [name & body]
   `(lighttable.command/on ~name (fn ~@body)))
 
 (defmacro in [ctx & body]
@@ -41,26 +50,11 @@
   (let [[params body] (->params body)]
     `(assoc ~ctx :out (fn ~params ~@body))))
 
-(defmacro defcontext [name & body]
-  `(let [ctx# {:name ~name}]
-     (lighttable.context/add-context!
-       (-> ctx#
-           ~@body))))
-
 (defmacro extract [elem kvs & body]
   (let [defs (vec (apply concat (for [[k v] (partition 2 kvs)]
                                   `[~k (lt.util.dom/$ ~v ~elem)])))]
     `(let ~defs
        ~@body)))
-
-(defmacro foreach [xs & body]
-  `(let [xs# ~(second xs)
-         len# (.-length xs#)]
-     (loop [left# 0]
-       (when (< left# len#)
-         (let [~(first xs) (aget xs# left)]
-           ~@body
-           (recur (inc left#)))))))
 
 (defmacro with-time [& body]
   (let [start (gensym "start")

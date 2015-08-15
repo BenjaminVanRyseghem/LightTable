@@ -17,7 +17,7 @@
             [clojure.string :as string]
             [lt.objs.editor :as editor]
             [lt.objs.editor.pool :as pool])
-  (:require-macros [lt.macros :refer [behavior defui extract foreach background]]))
+  (:require-macros [lt.macros :refer [behavior defui extract background]]))
 
 (def search! (background (fn [obj-id opts]
                            (let [replacer (js/require (str js/ltpath "/core/node_modules/replace"))
